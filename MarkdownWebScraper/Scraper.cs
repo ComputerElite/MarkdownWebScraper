@@ -15,13 +15,16 @@ public class Scraper
     List<Error> errors = new();
     Regex r = new("https:\\/\\/[^\"]+");
     Regex relativeUrlRegex = new ("(href|src)=\"(?!http|data)([^\"]+)\"");
+    Config _config;
 
 
-    public Scraper(string startPage, string? username = null, string? password = null) {
-        target = startPage;
-        this.username = username;
-        this.password = password;
-        queued = new List<string>{target};
+    public Scraper(Config c)
+    {
+        _config = c;
+        target = c.Target;
+        this.username = c.Username;
+        this.password = c.Password;
+        queued = new List<string> { target };
     }
 
 
@@ -44,6 +47,14 @@ public class Scraper
             return url;
         }
     }
+    List<string> downloadedFiles = new List<string>();
+
+    bool FileDownloaded(string f)
+    {
+        if (downloadedFiles.Contains(f)) return true;
+        downloadedFiles.Add(f);
+        return false;
+    }
 
     void DownloadFile(string url, WebClient c)
     {
@@ -62,8 +73,9 @@ public class Scraper
         string fileName = Path.GetFileName(uri.AbsolutePath);
         if (!fileName.Contains('.')) endFilePath += (endFilePath.EndsWith('/') ? "" : "/") + "index.html";
         string filePath = Constants.raw + endFilePath;
-        if(!File.Exists(filePath)) {
-            byte[] data;
+        byte[] data = [];
+        if (!FileDownloaded(filePath))
+        {
             try
             {
                 data = c.DownloadData(url);
@@ -77,22 +89,25 @@ public class Scraper
             }
             Console.WriteLine(uri.Host);
             //Console.WriteLine(fileName);
-            string dir = Path.GetDirectoryName(filePath);
             //Console.WriteLine(file);
             //Console.WriteLine(filePath);
-            if(!Directory.Exists(dir))Directory.CreateDirectory(dir);
-            File.WriteAllBytes(filePath, data);
+            if (_config.OutputToDir)
+            {
+                string dir = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllBytes(filePath, data);
+            }
         }
         
-        string content = File.ReadAllText(filePath);
+        string content = Encoding.UTF8.GetString(data);
         string newContent = content;
         // Extract urls via regex
         string cleanFilePath = Constants.clean + endFilePath;
         string cleanDir = Path.GetDirectoryName(cleanFilePath);
-        if(!Directory.Exists(cleanDir)) Directory.CreateDirectory(cleanDir);
+        if(_config.OutputToDir) if(!Directory.Exists(cleanDir)) Directory.CreateDirectory(cleanDir);
         if (!content.Contains("<html"))
         {
-            File.Copy(filePath, cleanFilePath, true);
+            if(_config.OutputToDir)File.Copy(filePath, cleanFilePath, true);
             return;
         }
         foreach (Match match in relativeUrlRegex.Matches(content))
@@ -122,7 +137,8 @@ public class Scraper
             //Console.WriteLine(url + " -> " + match.Value + " = " + relative + " exists: " + newContent.Contains(match.Value));
             newContent = newContent.Replace(match.Value + "\"", relative + "\"");
         }
-        File.WriteAllText(cleanFilePath, newContent);
+        if(_config.OutputToDir)
+            File.WriteAllText(cleanFilePath, newContent);
     }
 
     public void ScrapePage()

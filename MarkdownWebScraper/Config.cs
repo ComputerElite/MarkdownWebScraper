@@ -7,6 +7,7 @@ public class Config
     public string? Username { get; set; }
     public string? Password { get; set; }
     public string Target { get; set; } = "https://inf-schule.de";
+    public bool OutputToDir { get; set; } = true;
     private string? _path;
 
     public static Config LoadConfig(string path)

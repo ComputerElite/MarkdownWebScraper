@@ -1,3 +1,5 @@
 .idea
 MarkdownWebScraper/bin
 MarkdownWebScraper/obj
+**/clean
+**/raw
