@@ -1,4 +1,5 @@
-# MarkdownWebScraper
+> [!WARNING]
+> This repository has moved to Codeberg: https://codeberg.org/kaiya/MarkdownWebScraper # MarkdownWebScraper
 Dotnet program for scraping websites and creating markdown.
 
 ## Running
